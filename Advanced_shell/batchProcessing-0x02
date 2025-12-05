@@ -1,0 +1,39 @@
+#!/bin/bash
+# batchProcessing-0x02 – Fetch multiple Pokémon with rate-limiting
+# Saves each to pokemon_data/<name>.json
+
+set -euo pipefail
+
+# List of Pokémon to fetch
+POKEMONS=(
+    bulbasaur
+    ivysaur
+    venusaur
+    charmander
+    charmeleon
+)
+
+# Create output directory
+mkdir -p pokemon_data
+
+# Polite delay between requests (PokeAPI allows ~100/min, we do ~1 per second)
+DELAY=1.2
+
+echo "Starting batch fetch of ${#POKEMONS[@]} Pokémon..."
+
+for pokemon in "${POKEMONS[@]}"; do
+    echo -n "Fetching data for $pokemon... "
+
+    if curl -fsSL "https://pokeapi.co/api/v2/pokemon/$pokemon" \
+            -o "pokemon_data/${pokemon}.json"; then
+        echo "Saved to pokemon_data/${pokemon}.json"
+    else
+        echo "Failed to fetch $pokemon"
+        rm -f "pokemon_data/${pokemon}.json"  # clean up partial file
+    fi
+
+    # Rate limiting – be kind to the API
+    sleep "$DELAY"
+done
+
+echo "Batch complete! All files saved in pokemon_data/"
