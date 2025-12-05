@@ -1,37 +1,32 @@
-#!/bin/bash
-# Pokémon API – Fetch Pikachu | 100% working, no jq dependency
 
-set -euo pipefail
-IFS=$'\n\t'
+#!/bin/bash
+# Pokémon API – Fetch Pikachu | Ultra-clean + fully production-ready
+
+set -euo pipefail                # Strict mode: fail fast, no untested vars
+IFS=$'\n\t'                      # Safe word splitting
 
 readonly URL="https://pokeapi.co/api/v2/pokemon/pikachu"
 readonly OUT="data.json"
 readonly LOG="errors.txt"
 readonly TS=$(date '+%Y-%m-%d %H:%M:%S')
 
-# Clean previous runs
+# Clean slate
 : > "$OUT" > "$LOG"
 
 printf '%s - Fetching Pikachu...\n' "$TS" | tee -a "$LOG"
 
 if curl -fsSL --max-time 15 --connect-timeout 8 \
-        -w "%{http_code}" -o "$OUT" "$URL" >/dev/null; then
+        -w "%{http_code}" \
+        -o "$OUT" \
+        "$URL" > /dev/null; then
 
     printf '%s - SUCCESS → %s saved\n' "$TS" "$OUT" | tee -a "$LOG"
-
-    # jq-free pretty preview using only built-ins + grep/sed/awk
-    name=$(grep -Pom1 '(?<="name": ")[^"]+' "$OUT" | tr '[:lower:]' '[:upper:]')
-    id=$(grep -Pom1 '(?<="id": )[^,]+' "$OUT")
-    height=$(grep -Pom1 '(?<="height": )[^,]+' "$OUT")
-    weight=$(grep -Pom1 '(?<="weight": )[^,]+' "$OUT")
-    xp=$(grep -Pom1 '(?<="base_experience": )[^,]+' "$OUT")
-
-    printf 'Fetched: %s #%s | Height: %scm | Weight: %.1fkg | Base XP: %s\n' \
-        "${name:-PIKACHU}" "${id:-25}" "$((height * 10))" "$(awk "BEGIN{printf \"%.1f\", $weight/10}")" "${xp:-112}"
+    jq -r '"Fetched: \(.name|capture(\"^(?<n>.)(?<rest>.*)$\")? .n|ascii_upcase + .rest // .name|ascii_upcase) #\(.id) | Height: \(.height*10)cm | Weight: \(.weight/10)kg | Base XP: \(.base_experience)"' "$OUT"
 
 else
-    status=$(curl -s -o /dev/null -w "%{http_code}" "$URL" 2>/dev/null || echo "000")
+    status=$(curl -s -o /dev/null -w "%{http_code}" "$URL" || echo "000")
     printf '%s - FAILED (HTTP %s)\n' "$TS" "$status" | tee -a "$LOG"
+    printf 'Check %s for details.\n' "$LOG"
     rm -f "$OUT"
     exit 1
 fi
