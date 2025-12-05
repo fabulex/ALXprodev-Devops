@@ -1,0 +1,54 @@
+#!/bin/bash
+# batchProcessing-0x04 – Fetch multiple Pokémon in PARALLEL (professional version)
+# Uses & and wait with PID tracking and MAX_PARALLEL control
+
+set -euo pipefail
+IFS=$'\n\t'
+
+# Pokémon list
+POKEMONS=(bulbasaur ivysaur venusaur charmander charmeleon)
+
+OUTPUT_DIR="pokemon_data"
+mkdir -p "$OUTPUT_DIR"
+
+# Maximum concurrent background jobs
+MAX_PARALLEL=5
+pids=()  # Array to track background PIDs
+
+echo "Starting parallel fetch of ${#POKEMONS[@]} Pokémon (max $MAX_PARALLEL concurrent)..."
+
+for pokemon in "${POKEMONS[@]}"; do
+    # Limit concurrent jobs
+    while ((${#pids[@]} >= MAX_PARALLEL)); do
+        wait -n  # Wait for any one job to finish
+        # Clean up finished PIDs from array
+        for i in "${!pids[@]}"; do
+            pid=${pids[i]}
+            if ! kill -0 "$pid" 2>/dev/null; then
+                unset 'pids[i]'
+            fi
+        done
+    done
+
+    echo "Launching fetch for $pokemon..."
+
+    # Background process: fetch and save
+    (
+        file="$OUTPUT_DIR/${pokemon}.json"
+        if curl -fsSL "https://pokeapi.co/api/v2/pokemon/$pokemon" -o "$file"; then
+            echo "Saved $pokemon → $file ✅"
+        else
+            echo "FAILED $pokemon ❌"
+            rm -f "$file"
+        fi
+    ) &
+
+    # Store PID
+    pids+=($!)
+done
+
+# Wait for ALL background jobs to finish
+echo "Waiting for all background processes to complete..."
+wait
+
+echo "Parallel batch processing complete! All files in $OUTPUT_DIR/"
