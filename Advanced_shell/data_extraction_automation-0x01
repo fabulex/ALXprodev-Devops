@@ -1,13 +1,5 @@
-#!/bin/bash
-# Pokémon Data Extraction Task
-# Extracts name, type, weight, and height from data.json
-
-set -euo pipefail
-
-JSON_FILE="data.json"
-
-# Defensive check
-[[ -f "$JSON_FILE" ]] || { echo "ERROR: $JSON_FILE not found. Run Task 0 first."; exit 1; }
+k
+[[ -f "$JSON_FILE" ]] || { echo "ERROR: $JSON_FILE not found. Run Task 0 first.>
 
 # Extract and capitalize using only jq, sed, awk as required
 NAME=$(jq -r '.name' "$JSON_FILE" | sed 's/^\(.\)/\U\1/')
@@ -17,7 +9,7 @@ WEIGHT_HG=$(jq -r '.weight' "$JSON_FILE")
 
 # Convert units
 HEIGHT_M=$(awk "BEGIN {printf \"%.1f\", $HEIGHT_DM / 10}")
-WEIGHT_KG=$(awk "BEGIN {printf \"%g\", $WEIGHT_HG / 10}")   # %g removes unnecessary .0
+WEIGHT_KG=$(awk "BEGIN {printf \"%g\", $WEIGHT_HG / 10}")   # %g removes unnece>
 
 # Final output – exactly matches expected sample
 echo "$NAME is of type $TYPE, weighs ${WEIGHT_KG}kg, and is ${HEIGHT_M}m tall."
