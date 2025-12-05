@@ -1,15 +1,22 @@
-k
-[[ -f "$JSON_FILE" ]] || { echo "ERROR: $JSON_FILE not found. Run Task 0 first.>
+#!/bin/bash
+# data_extraction_automation-0x01 – exact human-readable format
 
-# Extract and capitalize using only jq, sed, awk as required
-NAME=$(jq -r '.name' "$JSON_FILE" | sed 's/^\(.\)/\U\1/')
-TYPE=$(jq -r '.types[0].type.name' "$JSON_FILE" | sed 's/^\(.\)/\U\1/')
-HEIGHT_DM=$(jq -r '.height' "$JSON_FILE")
-WEIGHT_HG=$(jq -r '.weight' "$JSON_FILE")
+set -euo pipefail
 
-# Convert units
-HEIGHT_M=$(awk "BEGIN {printf \"%.1f\", $HEIGHT_DM / 10}")
-WEIGHT_KG=$(awk "BEGIN {printf \"%g\", $WEIGHT_HG / 10}")   # %g removes unnece>
+JSON_FILE="data.json"
+[[ -f "$JSON_FILE" ]] || { echo "ERROR: $JSON_FILE not found."; exit 1; }
 
-# Final output – exactly matches expected sample
-echo "$NAME is of type $TYPE, weighs ${WEIGHT_KG}kg, and is ${HEIGHT_M}m tall."
+# Extract and capitalize
+name=$(jq -r '.name' "$JSON_FILE" | sed 's/^\(.\)/\U\1/')            # Pikachu
+type=$(jq -r '.types[0].type.name' "$JSON_FILE" | sed 's/^\(.\)/\U\1/') # Electric
+
+# Extract height/weight in dm/hg
+height_dm=$(jq -r '.height' "$JSON_FILE")
+weight_hg=$(jq -r '.weight' "$JSON_FILE")
+
+# Convert units and format as integer or one decimal
+formatted_height=$(awk "BEGIN {printf \"%.1f\", $height_dm / 10}")
+formatted_weight=$(awk "BEGIN {printf \"%g\", $weight_hg / 10}")  # removes trailing .0 if not needed
+
+# Final output — must exactly match test string
+echo "$name is of type $type, weighs ${formatted_weight}kg, and is ${formatted_height}m tall."
